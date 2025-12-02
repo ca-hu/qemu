@@ -125,6 +125,15 @@ qga = executable('qemu-ga', qga_ss.sources() + qga_objs,
                  install: true)
 all_qga += qga
 
+if host_os != 'windows'
+  qga_exec_helper = executable('qemu-ga-exec-helper',
+                               files('exec-helper.c'),
+                               install: true,
+                               install_dir: libexecdir / 'qemu-ga')
+  all_qga += qga_exec_helper
+endif
+
+
 if host_os == 'windows'
   qemu_ga_msi_arch = {
     'x86': ['-D', 'Arch=32'],

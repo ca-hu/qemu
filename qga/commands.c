@@ -414,7 +414,7 @@ GuestExec *qmp_guest_exec(const char *path,
     GPid pid;
     GuestExec *ge = NULL;
     GuestExecInfo *gei;
-    char **argv, **envp;
+    char **argv, **envp, **exec_argv;
     strList arglist;
     gboolean ret;
     GError *gerr = NULL;
@@ -426,6 +426,9 @@ GuestExec *qmp_guest_exec(const char *path,
     GuestExecCaptureOutputMode output_mode;
     g_autofree uint8_t *input = NULL;
     size_t ninput = 0;
+    g_autofree gchar *helper = NULL;
+    gboolean use_helper = false;
+    int argc = 0;
 
     arglist.value = (char *)path;
     arglist.next = has_arg ? arg : NULL;
@@ -439,6 +442,26 @@ GuestExec *qmp_guest_exec(const char *path,
 
     argv = guest_exec_get_args(&arglist, true);
     envp = has_env ? guest_exec_get_args(env, false) : NULL;
+
+#if !defined(G_OS_WIN32)
+    helper = g_build_filename(qemu_get_libexecdir(), "qemu-ga",
+                              "qemu-ga-exec-helper", NULL);
+    use_helper = g_file_test(helper, G_FILE_TEST_IS_EXECUTABLE);
+#endif
+
+    if (use_helper) {
+        while (argv[argc]) {
+            argc++;
+        }
+        exec_argv = g_new(char *, argc + 2);
+        exec_argv[0] = helper;
+        for (int i = 0; i < argc; i++) {
+            exec_argv[i + 1] = argv[i];
+        }
+        exec_argv[argc + 1] = NULL;
+    } else {
+        exec_argv = argv;
+    }
 
     flags = G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD |
         G_SPAWN_SEARCH_PATH_FROM_ENVP;
@@ -470,7 +493,7 @@ GuestExec *qmp_guest_exec(const char *path,
         break;
     }
 
-    ret = g_spawn_async_with_pipes(NULL, argv, envp, flags,
+    ret = g_spawn_async_with_pipes(NULL, exec_argv, envp, flags,
             guest_exec_task_setup, &has_merge, &pid, input_data ? &in_fd : NULL,
             has_output ? &out_fd : NULL, has_output ? &err_fd : NULL, &gerr);
     if (!ret) {
@@ -522,6 +545,9 @@ GuestExec *qmp_guest_exec(const char *path,
     }
 
 done:
+    if (use_helper) {
+        g_free(exec_argv);
+    }
     g_free(argv);
     g_free(envp);
 
