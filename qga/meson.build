@@ -129,7 +129,7 @@ if host_os != 'windows'
   qga_exec_helper = executable('qemu-ga-exec-helper',
                                files('exec-helper.c'),
                                install: true,
-                               install_dir: libexecdir / 'qemu-ga')
+                               install_dir: get_option('libexecdir') / 'qemu-ga')
   all_qga += qga_exec_helper
 endif
 
