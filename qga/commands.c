@@ -17,7 +17,6 @@
 #include "qapi/error.h"
 #include "qemu/base64.h"
 #include "qemu/cutils.h"
-#include "qemu/config-file.h"
 #include "commands-common.h"
 
 /* Maximum captured guest-exec out_data/err_data - 16MB */
@@ -445,7 +444,7 @@ GuestExec *qmp_guest_exec(const char *path,
     envp = has_env ? guest_exec_get_args(env, false) : NULL;
 
 #if !defined(G_OS_WIN32)
-    helper = g_build_filename(qemu_get_libexecdir(), "qemu-ga",
+    helper = g_build_filename(CONFIG_QEMU_HELPERDIR, "qemu-ga",
                               "qemu-ga-exec-helper", NULL);
     use_helper = g_file_test(helper, G_FILE_TEST_IS_EXECUTABLE);
 #endif
