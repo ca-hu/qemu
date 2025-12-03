@@ -17,6 +17,7 @@
 #include "qapi/error.h"
 #include "qemu/base64.h"
 #include "qemu/cutils.h"
+#include "qemu/config-file.h"
 #include "commands-common.h"
 
 /* Maximum captured guest-exec out_data/err_data - 16MB */
